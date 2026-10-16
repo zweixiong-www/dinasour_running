@@ -1,0 +1,1026 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>恐龙跑酷 · 像素黑白</title>
+<style>
+  :root{
+    --ink:#000;
+    --paper:#fff;
+    --gray:#c9c9c9;
+    --gray2:#e7e7e7;
+  }
+  *{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+  html,body{ height:100%; }
+  body{
+    background:#fff;
+    color:#000;
+    font-family:"Courier New", "Lucida Console", Monaco, Consolas, monospace;
+    display:flex; align-items:center; justify-content:center;
+    min-height:100vh; padding:16px;
+    overflow-x:hidden;
+  }
+  /* pixel border frame */
+  #wrap{
+    width:100%; max-width:920px;
+    border:4px solid #000;
+    background:#fff;
+    position:relative;
+    box-shadow:8px 8px 0 #000;
+    padding:20px;
+  }
+  .screen{ display:none; }
+  .screen.active{ display:block; }
+
+  /* ---------- titles ---------- */
+  .pixel-title{
+    font-size:42px; font-weight:bold; letter-spacing:4px;
+    text-align:center; line-height:1.15;
+    text-shadow:3px 3px 0 #9b9b9b, 6px 6px 0 #000;
+    margin:6px 0 4px;
+  }
+  .subtitle{
+    text-align:center; letter-spacing:3px; font-size:12px;
+    color:#000; margin-bottom:18px; text-transform:uppercase;
+  }
+  .subtitle span{ background:#000; color:#fff; padding:2px 8px; }
+
+  /* ---------- best badge ---------- */
+  .best-badge{
+    text-align:center; margin:0 auto 20px; width:fit-content;
+    border:3px solid #000; padding:8px 22px; font-weight:bold; font-size:16px;
+    letter-spacing:2px; background:#fff;
+    box-shadow:4px 4px 0 #000;
+  }
+  .best-badge b{ font-size:22px; }
+
+  /* ---------- buttons ---------- */
+  .btn{
+    display:block; width:280px; margin:0 auto 16px;
+    font-family:inherit; font-weight:bold; font-size:18px; letter-spacing:4px;
+    color:#000; background:#fff; border:3px solid #000;
+    padding:14px 20px; cursor:pointer;
+    box-shadow:4px 4px 0 #000;
+    transition:transform .06s, box-shadow .06s, background .06s, color .06s;
+    text-transform:uppercase;
+  }
+  .btn:hover{ background:#000; color:#fff; }
+  .btn:active{ transform:translate(4px,4px); box-shadow:0 0 0 #000; }
+  .btn.ghost{ width:200px; font-size:15px; }
+
+  .hint{
+    text-align:center; font-size:12px; letter-spacing:1px; color:#000;
+    margin-top:6px; opacity:.8;
+  }
+  .hint kbd{
+    border:2px solid #000; padding:0 6px; background:#fff; font-family:inherit;
+    box-shadow:2px 2px 0 #000;
+  }
+
+  /* ---------- game ---------- */
+  #screen-game{ text-align:center; }
+  #game{
+    width:100%; height:auto;
+    display:block;
+    border:3px solid #000;
+    image-rendering:pixelated; image-rendering:crisp-edges;
+    background:#fff;
+    cursor:pointer;
+  }
+
+  /* ---------- history ---------- */
+  .hist-head{
+    display:flex; align-items:center; justify-content:space-between;
+    margin-bottom:14px; border-bottom:3px solid #000; padding-bottom:10px;
+  }
+  .hist-head h2{ font-size:24px; letter-spacing:4px; }
+  #historyList{ list-style:none; max-height:52vh; overflow-y:auto; padding-right:6px; }
+  .hist-item{
+    display:flex; align-items:center; gap:12px;
+    border:3px solid #000; padding:10px 14px; margin-bottom:10px;
+    background:#fff; font-weight:bold; position:relative;
+  }
+  .hist-item .rank{
+    font-size:22px; width:34px; text-align:center; flex:none;
+  }
+  .hist-item .info{ flex:1; line-height:1.4; }
+  .hist-item .info .sc{ font-size:20px; letter-spacing:2px; }
+  .hist-item .info .meta{ font-size:11px; letter-spacing:1px; opacity:.7; }
+  .hist-item .coins{ font-size:14px; flex:none; }
+  .hist-item.best{
+    background:#000; color:#fff;
+    box-shadow:4px 4px 0 #9b9b9b;
+  }
+  .hist-item.best .crown{
+    position:absolute; top:-14px; right:10px;
+    background:#000; color:#fff; border:3px solid #fff;
+    font-size:12px; letter-spacing:2px; padding:2px 10px;
+    box-shadow:2px 2px 0 #000;
+  }
+  .hist-empty{ text-align:center; padding:40px 0; letter-spacing:2px; opacity:.7; }
+
+  /* ---------- guide (图鉴) ---------- */
+  #guideList{
+    list-style:none; display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(230px,1fr));
+    gap:14px; padding-bottom:6px;
+  }
+  .guide-item{
+    display:flex; align-items:center; gap:14px;
+    border:3px solid #000; padding:12px 14px; background:#fff;
+    box-shadow:4px 4px 0 #000;
+  }
+  .guide-item canvas{
+    image-rendering:pixelated; image-rendering:crisp-edges;
+    width:64px; height:64px; flex:none;
+    border:2px solid #000; background:#fff;
+  }
+  .guide-name{ font-weight:bold; font-size:17px; letter-spacing:2px; }
+  .guide-tag{
+    display:inline-block; background:#000; color:#fff; font-size:12px;
+    padding:1px 7px; margin-left:6px; letter-spacing:1px; vertical-align:2px;
+  }
+  .guide-desc{ font-size:12px; letter-spacing:1px; opacity:.85; margin-top:5px; line-height:1.6; }
+
+  /* ---------- game over ---------- */
+  #screen-over{ text-align:center; padding-top:10px; }
+  #screen-over h2{ font-size:30px; letter-spacing:5px; margin-bottom:6px; }
+  .over-new{
+    display:none; font-size:16px; letter-spacing:4px; font-weight:bold;
+    background:#000; color:#fff; padding:6px 16px; margin:6px auto 14px; width:fit-content;
+    animation:blink .5s steps(2) infinite;
+  }
+  .over-new.show{ display:block; }
+  @keyframes blink{ 50%{ background:#fff; color:#000; } }
+  .over-stats{
+    display:flex; gap:12px; justify-content:center; margin:16px 0 22px; flex-wrap:wrap;
+  }
+  .stat{
+    border:3px solid #000; padding:10px 18px; min-width:120px;
+    box-shadow:3px 3px 0 #000; background:#fff;
+  }
+  .stat span{ display:block; font-size:11px; letter-spacing:3px; opacity:.7; }
+  .stat b{ font-size:26px; letter-spacing:1px; }
+
+  .back-row{ text-align:center; margin-top:8px; }
+</style>
+</head>
+<body>
+<div id="wrap">
+
+  <!-- ============ HOME ============ -->
+  <div id="screen-home" class="screen active">
+    <h1 class="pixel-title">恐龙跑酷</h1>
+    <div class="subtitle"><span>DINO RUNNER · PIXEL · MONO</span></div>
+    <div class="best-badge">最高分 <b id="homeBest">0</b></div>
+    <button class="btn" id="startBtn">开始游戏</button>
+    <button class="btn" id="historyBtn">查看历史记录</button>
+    <button class="btn" id="guideBtn">道具图鉴</button>
+    <div class="hint">
+      <kbd>SPACE</kbd> / <kbd>↑</kbd> 跳跃·空中可二连跳 &nbsp;·&nbsp; <kbd>↓</kbd> 快速下落 &nbsp;·&nbsp; 点击屏幕跳跃
+    </div>
+  </div>
+
+  <!-- ============ HISTORY ============ -->
+  <div id="screen-history" class="screen">
+    <div class="hist-head">
+      <h2>历史记录</h2>
+      <button class="btn ghost" id="backBtn">返回</button>
+    </div>
+    <ul id="historyList"></ul>
+  </div>
+
+  <!-- ============ GUIDE (图鉴) ============ -->
+  <div id="screen-guide" class="screen">
+    <div class="hist-head">
+      <h2>道具图鉴</h2>
+      <button class="btn ghost" id="guideBackBtn">返回</button>
+    </div>
+    <ul id="guideList"></ul>
+  </div>
+
+  <!-- ============ GAME ============ -->
+  <div id="screen-game" class="screen">
+    <canvas id="game" width="900" height="300"></canvas>
+  </div>
+
+  <!-- ============ GAME OVER ============ -->
+  <div id="screen-over" class="screen">
+    <h2>游戏结束</h2>
+    <div class="over-new" id="overNew">★ 新纪录 ★</div>
+    <div class="over-stats">
+      <div class="stat"><span>分数</span><b id="overScore">0</b></div>
+      <div class="stat"><span>金币</span><b id="overCoins">0</b></div>
+      <div class="stat"><span>最高分</span><b id="overBest">0</b></div>
+    </div>
+    <button class="btn" id="restartBtn">重新开始</button>
+    <button class="btn" id="homeBtn">返回首页</button>
+  </div>
+
+</div>
+
+<script>
+(function(){
+'use strict';
+
+/* =========================================================
+   像素字体 (3x5) —— 用于 HUD 文字
+========================================================= */
+var FONT = {
+  '0':"111101101101111", '1':"010110010010111", '2':"111001111100111",
+  '3':"111001111001111", '4':"101101111001001", '5':"111100111001111",
+  '6':"111100111101111", '7':"111001001010010", '8':"111101111101111",
+  '9':"111101111001111",
+  'A':"111101111101101", 'B':"110101110101110", 'C':"111100100100111",
+  'D':"110101101101110", 'E':"111100110100111", 'F':"111100110100100",
+  'G':"111100101101111", 'H':"101101111101101", 'I':"111010010010111",
+  'J':"001001001101111", 'K':"101101110101101", 'L':"100100100100111",
+  'M':"101111111101101", 'N':"101111111111101", 'O':"111101101101111",
+  'P':"111101111100100", 'Q':"111101101111001", 'R':"110101110101101",
+  'S':"111100111001111", 'T':"111010010010010", 'U':"101101101101111",
+  'V':"101101101101010", 'W':"101101111111101", 'X':"101101010101101",
+  'Y':"101101010010010", 'Z':"111001010100111",
+  ':':"000010000010000", '.':"000000000000010", '-':"000000111000000",
+  '!':"010010010000010", ' ':"000000000000000", '/':"001001010010100"
+};
+
+function textWidth(t, s){ return t.length * 4 * s - s; }
+function drawPixelText(ctx, text, x, y, scale, color){
+  ctx.fillStyle = color || '#000';
+  var up = String(text).toUpperCase(), cx = x;
+  for(var i=0;i<up.length;i++){
+    var map = FONT[up[i]];
+    if(!map){ cx += 4*scale; continue; }
+    for(var r=0;r<5;r++){
+      for(var c=0;c<3;c++){
+        if(map[r*3+c] === '1'){
+          ctx.fillRect(cx + c*scale, y + r*scale, scale, scale);
+        }
+      }
+    }
+    cx += 4*scale;
+  }
+}
+
+/* =========================================================
+   精灵（像素画）—— 用 '.' 与 '#' 表示
+========================================================= */
+function sprite(rows){ return { h:rows.length, w:rows[0].length, p:rows }; }
+
+var DINO_A = sprite([
+  "................#######.",
+  "...............#########",
+  "...............#########",
+  "...............###..####",
+  "...............###..####",
+  "..............##########",
+  "..............######.###",
+  ".............#######....",
+  "............########....",
+  "...........#######.##...",
+  "..........#######..##...",
+  ".........############...",
+  "........#############...",
+  ".......##############...",
+  "......###############...",
+  ".....################...",
+  "....#################...",
+  "...##################...",
+  "..###################...",
+  ".#####....######........"
+]);
+var DINO_B = sprite([
+  "................#######.",
+  "...............#########",
+  "...............#########",
+  "...............###..####",
+  "...............###..####",
+  "..............##########",
+  "..............######.###",
+  ".............#######....",
+  "............########....",
+  "...........#######.##...",
+  "..........#######..##...",
+  ".........############...",
+  "........#############...",
+  ".......##############...",
+  "......###############...",
+  ".....################...",
+  "....#################...",
+  "...##################...",
+  "..###################...",
+  "...####....######......."
+]);
+var DINO_JUMP = sprite([
+  "................#######.",
+  "...............#########",
+  "...............#########",
+  "...............###..####",
+  "...............###..####",
+  "..............##########",
+  "..............######.###",
+  ".............#######....",
+  "............########....",
+  "...........#######.##...",
+  "..........#######..##...",
+  ".........############...",
+  "........#############...",
+  ".......##############...",
+  "......###############...",
+  ".....################...",
+  "....################....",
+  "...################.....",
+  "..################......",
+  "........................"
+]);
+var CACTUS_S = sprite([
+  ".##.",".##.",".##.",".##.",".##.",
+  ".##.",".##.",".##.",".##.",".##."
+]);
+var CACTUS_M = sprite([
+  "...##...","...##...","...##...","...##...",
+  "###.##..","###.##..","###.##..","...##...",
+  "...##...","...##...","...##...","...##..."
+]);
+var CACTUS_L = sprite([
+  "...##...","...##...","...##...",
+  "###.##..","###.##..","###.##..","...##...",
+  "...##.##","...##.##","...##.##","...##...",
+  "...##...","...##...","...##...","...##...","...##..."
+]);
+var BIRD_A = sprite([
+  "..##..##..",".########.","..######..","....##....",
+  "..........",".........."
+]);
+var BIRD_B = sprite([
+  "..........","..##..##..",".########.",".########.",
+  "..........",".........."
+]);
+var COIN = sprite([
+  ".######.","##....##","#......#","#..##..#",
+  "#..##..#","#......#","##....##",".######."
+]);
+var STAR = sprite([
+  "...##...","...##...","..####..","########",
+  ".######.","..####..",".##..##.","##....##"
+]);
+var DIAMOND = sprite([
+  "...##...","..####..",".######.","########",
+  ".######.","..####..","...##...","........"
+]);
+var MAGNET = sprite([
+  ".##..##.",".##..##.",".##..##.",".##..##.",
+  "########",".######.","........","........"
+]);
+var CROWN = sprite([
+  "#..##..#","#..##..#","########","########",
+  ".######.","........","........","........"
+]);
+
+var SPRITES = {
+  dinoA:DINO_A, dinoB:DINO_B, dinoJump:DINO_JUMP,
+  cactS:CACTUS_S, cactM:CACTUS_M, cactL:CACTUS_L,
+  birdA:BIRD_A, birdB:BIRD_B,
+  coin:COIN, star:STAR, diamond:DIAMOND, magnet:MAGNET, crown:CROWN
+};
+
+function drawSprite(ctx, sp, x, y, scale){
+  ctx.fillStyle = '#000';
+  for(var r=0;r<sp.h;r++){
+    var row = sp.p[r];
+    for(var c=0;c<sp.w;c++){
+      if(row[c] === '#') ctx.fillRect(x + c*scale, y + r*scale, scale, scale);
+    }
+  }
+}
+
+/* =========================================================
+   DOM 工具 & 屏幕切换
+========================================================= */
+var $ = function(s){ return document.querySelector(s); };
+var screens = {
+  home: $('#screen-home'), history: $('#screen-history'),
+  guide: $('#screen-guide'),
+  game: $('#screen-game'), over: $('#screen-over')
+};
+function showScreen(name){
+  for(var k in screens){ screens[k].classList.toggle('active', k===name); }
+}
+
+/* =========================================================
+   音效 (WebAudio 简单方波)
+========================================================= */
+var Sound = {
+  ctx:null,
+  init:function(){
+    if(this.ctx) return;
+    try{
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if(AC) this.ctx = new AC();
+    }catch(e){}
+  },
+  tone:function(freq, dur, type, vol, slide){
+    if(!this.ctx) return;
+    var t = this.ctx.currentTime;
+    var o = this.ctx.createOscillator();
+    var g = this.ctx.createGain();
+    o.type = type || 'square';
+    o.frequency.setValueAtTime(freq, t);
+    if(slide) o.frequency.exponentialRampToValueAtTime(slide, t+dur);
+    g.gain.setValueAtTime(vol||0.12, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t+dur);
+    o.connect(g); g.connect(this.ctx.destination);
+    o.start(t); o.stop(t+dur+0.02);
+  },
+  jump:function(){ this.tone(300, 0.12, 'square', 0.08, 520); },
+  jump2:function(){ this.tone(430, 0.09, 'square', 0.09, 660); this.tone(640, 0.10, 'square', 0.07, 900); },
+  coin:function(){ this.tone(880, 0.08, 'square', 0.10); this.tone(1320, 0.10, 'square', 0.08); },
+  power:function(){ this.tone(660,0.08,'square',0.10); this.tone(880,0.08,'square',0.10); this.tone(1320,0.12,'square',0.10); },
+  hit:function(){ this.tone(220, 0.25, 'sawtooth', 0.14, 60); }
+};
+
+/* =========================================================
+   历史记录
+========================================================= */
+var KEY = 'dinoRunnerHistoryV1';
+function loadHistory(){
+  try{ return JSON.parse(localStorage.getItem(KEY) || '[]'); }
+  catch(e){ return []; }
+}
+function saveHistory(h){
+  try{ localStorage.setItem(KEY, JSON.stringify(h)); }catch(e){}
+}
+function bestScore(){
+  var h = loadHistory();
+  return h.length ? h[0].score : 0;
+}
+function fmtDate(t){
+  var d = new Date(t), p = function(n){ return (n<10?'0':'')+n; };
+  return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+' '+p(d.getHours())+':'+p(d.getMinutes());
+}
+
+/* =========================================================
+   游戏主体
+========================================================= */
+var canvas = $('#game');
+var ctx = canvas.getContext('2d');
+var W = canvas.width, H = canvas.height;
+var GROUND_Y = 250;
+var S = 3;            // 精灵缩放倍数
+var state = 'home';   // home | history | playing | over
+var game = null;
+
+function clamp(v, a, b){ return v<a?a:(v>b?b:v); }
+function aabb(ax,ay,aw,ah,bx,by,bw,bh){
+  return ax < bx+bw && ax+aw > bx && ay < by+bh && ay+ah > by;
+}
+
+function Game(){
+  this.over = false;
+  this.elapsed = 0;
+  this.speed = 280;
+  this.maxSpeed = 640;
+  this.accel = 5.5;
+  this.distance = 0;
+
+  this.dino = { x:80, w:48, h:40, y:GROUND_Y-40, vy:0, onGround:true, frame:0, frameTimer:0 };
+  this.jumpsLeft = 2;   // 二连跳剩余次数
+
+  this.obstacles = [];
+  this.coins = [];
+  this.powerups = [];
+  this.particles = [];
+
+  this.score = 0;
+  this.coinCount = 0;
+  this.best = bestScore();
+
+  this.distToObstacle = 500;
+  this.distToCoin = 220;
+  this.distToPowerup = 760;
+
+  this.magnet = 0;
+  this.flash = 0;
+  this.holdingJump = false;
+  this.fastFall = false;
+
+  // 背景云
+  this.clouds = [];
+  for(var i=0;i<7;i++){
+    this.clouds.push({ x: Math.random()*1400, y: 30+Math.random()*110, s: 0.7+Math.random()*0.9 });
+  }
+}
+
+Game.prototype.pressJump = function(){
+  if(this.over) return;
+  if(this.jumpsLeft > 0){
+    this.dino.vy = -700;
+    this.dino.onGround = false;
+    this.jumpsLeft--;
+    this.holdingJump = true;
+    if(this.jumpsLeft === 0){
+      // 空中二连跳
+      Sound.jump2();
+      this.spawnParticles(this.dino.x+this.dino.w/2, this.dino.y+this.dino.h/2, 8, '#000');
+    } else {
+      Sound.jump();
+      this.spawnParticles(this.dino.x+this.dino.w/2, GROUND_Y, 5, '#000');
+    }
+  }
+};
+Game.prototype.releaseJump = function(){ this.holdingJump = false; };
+
+Game.prototype.spawnParticles = function(x, y, n, color){
+  for(var i=0;i<n;i++){
+    this.particles.push({
+      x:x, y:y,
+      vx:(Math.random()-0.5)*220, vy:-Math.random()*180-30,
+      life:0.3+Math.random()*0.3, max:0.6, color:color||'#000'
+    });
+  }
+};
+
+Game.prototype.spawnObstacle = function(){
+  var r = Math.random(), o = {};
+  if(this.speed > 360 && r < 0.32){
+    o.type = 'bird';
+    o.spr = SPRITES.birdA;
+    o.w = 10*S; o.h = 6*S;
+    o.y = GROUND_Y - o.h - (Math.random() < 0.5 ? 96 : 40);
+  } else {
+    var k = Math.random();
+    if(k < 0.45){ o.type='cactusS'; o.spr=SPRITES.cactS; o.w=4*S; o.h=10*S; }
+    else if(k < 0.82){ o.type='cactusM'; o.spr=SPRITES.cactM; o.w=8*S; o.h=12*S; }
+    else { o.type='cactusL'; o.spr=SPRITES.cactL; o.w=8*S; o.h=16*S; }
+    o.y = GROUND_Y - o.h;
+  }
+  o.x = W + 40;
+  this.obstacles.push(o);
+
+  // 下一障碍距离随速度增大
+  var base = 260 + this.speed * 0.55;
+  this.distToObstacle = base + Math.random() * 260;
+
+  // 部分障碍上方放置金币弧线
+  if(o.type !== 'bird' && Math.random() < 0.5){
+    this.spawnCoinArc(o.x);
+  }
+};
+
+Game.prototype.spawnCoinRow = function(x, y, count){
+  for(var i=0;i<count;i++){
+    this.coins.push({ x:x + i*30, y:y, w:8*S, h:8*S, dead:false });
+  }
+};
+
+Game.prototype.spawnCoinArc = function(anchorX){
+  var n = 6, cx = anchorX - 30;
+  for(var i=0;i<n;i++){
+    var t = i/(n-1);
+    var y = GROUND_Y - 40 - Math.sin(t*Math.PI) * 92;
+    this.coins.push({ x:cx + i*28, y:y, w:8*S, h:8*S, dead:false });
+  }
+};
+
+Game.prototype.spawnPowerup = function(){
+  var roll = Math.random(), type, spr, value=0, effect=null;
+  if(roll < 0.30){ type='star'; spr=SPRITES.star; value=50; }
+  else if(roll < 0.55){ type='diamond'; spr=SPRITES.diamond; value=100; }
+  else if(roll < 0.80){ type='magnet'; spr=SPRITES.magnet; value=0; effect='magnet'; }
+  else { type='crown'; spr=SPRITES.crown; value=500; }
+  var y;
+  if(type === 'magnet'){ y = GROUND_Y - 16*S; }
+  else { y = (Math.random() < 0.5) ? GROUND_Y - 16*S : GROUND_Y - 16*S - 60; }
+  this.powerups.push({ x:W+40, y:y, w:8*S, h:8*S, type:type, spr:spr, value:value, effect:effect, dead:false });
+  this.distToPowerup = 900 + Math.random()*1100;
+};
+
+Game.prototype.update = function(dt){
+  if(this.over){
+    this.updateParticles(dt);
+    if(this.flash > 0) this.flash -= dt;
+    return;
+  }
+
+  this.elapsed += dt;
+  this.speed = Math.min(this.maxSpeed, this.speed + this.accel*dt);
+  this.distance += this.speed*dt;
+
+  // ---- 恐龙物理 ----
+  var d = this.dino;
+  if(!d.onGround){
+    var g = (this.holdingJump && d.vy < 0) ? 1700 : 2600;
+    d.vy += g*dt;
+    if(this.fastFall) d.vy = Math.min(d.vy + 3000*dt, 1100);
+    d.y += d.vy*dt;
+    if(d.y >= GROUND_Y - d.h){
+      d.y = GROUND_Y - d.h;
+      d.vy = 0; d.onGround = true;
+      this.jumpsLeft = 2;   // 落地重置二连跳
+    }
+  }
+  // 跑步动画
+  if(d.onGround){
+    d.frameTimer += dt;
+    if(d.frameTimer > 0.085){ d.frameTimer = 0; d.frame = (d.frame+1)%2; }
+  }
+
+  // ---- 生成 ----
+  this.distToObstacle -= this.speed*dt;
+  if(this.distToObstacle <= 0) this.spawnObstacle();
+
+  this.distToCoin -= this.speed*dt;
+  if(this.distToCoin <= 0){
+    // 地面金币行 或 高空金币行
+    if(Math.random() < 0.55) this.spawnCoinRow(W+40, GROUND_Y-2*S-14, 5);
+    else this.spawnCoinRow(W+40, GROUND_Y-100, 4);
+    this.distToCoin = 300 + Math.random()*380;
+  }
+
+  this.distToPowerup -= this.speed*dt;
+  if(this.distToPowerup <= 0) this.spawnPowerup();
+
+  // ---- 移动障碍 ----
+  for(var i=this.obstacles.length-1;i>=0;i--){
+    var o = this.obstacles[i];
+    o.x -= this.speed*dt;
+    if(o.x + o.w < -40) this.obstacles.splice(i,1);
+  }
+
+  // ---- 移动/吸附金币 ----
+  for(var j=this.coins.length-1;j>=0;j--){
+    var c = this.coins[j];
+    if(c.dead){ this.coins.splice(j,1); continue; }
+    c.x -= this.speed*dt;
+    if(this.magnet > 0){
+      var ccx = c.x + c.w/2, ccy = c.y + c.h/2;
+      var dx = d.x + d.w/2 - ccx, dy = d.y + d.h/2 - ccy;
+      var dist = Math.sqrt(dx*dx + dy*dy);
+      if(dist > 0.01 && dist < 220){
+        c.x += (dx/dist) * 1000 * dt;
+        c.y += (dy/dist) * 1000 * dt;
+      }
+    }
+    if(c.x + c.w < -30) this.coins.splice(j,1);
+  }
+  if(this.magnet > 0) this.magnet -= dt;
+
+  // ---- 移动道具 ----
+  for(var p=this.powerups.length-1;p>=0;p--){
+    var pu = this.powerups[p];
+    pu.x -= this.speed*dt;
+    if(pu.x + pu.w < -30) this.powerups.splice(p,1);
+  }
+
+  // ---- 碰撞检测 ----
+  var dh = { x:d.x+7, y:d.y+5, w:d.w-14, h:d.h-8 };
+  for(var k=0;k<this.obstacles.length;k++){
+    var ob = this.obstacles[k];
+    var box = { x:ob.x+3, y:ob.y+2, w:ob.w-6, h:ob.h-4 };
+    if(aabb(dh.x,dh.y,dh.w,dh.h, box.x,box.y,box.w,box.h)){ this.die(); return; }
+  }
+
+  // 金币
+  for(var m=this.coins.length-1;m>=0;m--){
+    var cn = this.coins[m];
+    var cbox = { x:cn.x+4, y:cn.y+4, w:cn.w-8, h:cn.h-8 };
+    if(aabb(dh.x,dh.y,dh.w,dh.h, cbox.x,cbox.y,cbox.w,cbox.h)){
+      this.score += 10;
+      this.coinCount++;
+      Sound.coin();
+      this.spawnParticles(cn.x+cn.w/2, cn.y+cn.h/2, 6, '#000');
+      this.coins.splice(m,1);
+    }
+  }
+
+  // 道具
+  for(var q=this.powerups.length-1;q>=0;q--){
+    var pw = this.powerups[q];
+    var pbox = { x:pw.x+3, y:pw.y+3, w:pw.w-6, h:pw.h-6 };
+    if(aabb(dh.x,dh.y,dh.w,dh.h, pbox.x,pbox.y,pbox.w,pbox.h)){
+      if(pw.value) this.score += pw.value;
+      if(pw.effect === 'magnet'){ this.magnet = 8; }
+      Sound.power();
+      this.spawnParticles(pw.x+pw.w/2, pw.y+pw.h/2, 12, '#000');
+      this.powerups.splice(q,1);
+    }
+  }
+
+  this.updateParticles(dt);
+};
+
+Game.prototype.updateParticles = function(dt){
+  for(var i=this.particles.length-1;i>=0;i--){
+    var p = this.particles[i];
+    p.x += p.vx*dt; p.y += p.vy*dt;
+    p.vy += 500*dt;
+    p.life -= dt;
+    if(p.life <= 0) this.particles.splice(i,1);
+  }
+};
+
+Game.prototype.die = function(){
+  this.over = true;
+  this.flash = 0.18;
+  Sound.hit();
+  this.record();
+  var self = this;
+  setTimeout(function(){ showGameOver(self); }, 520);
+};
+
+Game.prototype.record = function(){
+  var prevBest = bestScore();
+  var h = loadHistory();
+  h.push({ score:this.score, coins:this.coinCount, date:Date.now() });
+  h.sort(function(a,b){ return b.score - a.score; });
+  if(h.length > 30) h.length = 30;
+  saveHistory(h);
+  this.isNewBest = (this.score > prevBest && this.score > 0);
+};
+
+/* ---------- 渲染 ---------- */
+Game.prototype.render = function(){
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0,0,W,H);
+
+  this.drawBackground();
+  this.drawGround();
+
+  // 金币
+  for(var i=0;i<this.coins.length;i++){
+    var c = this.coins[i];
+    drawSprite(ctx, SPRITES.coin, Math.round(c.x), Math.round(c.y), S);
+  }
+  // 道具
+  for(var j=0;j<this.powerups.length;j++){
+    var p = this.powerups[j];
+    drawSprite(ctx, p.spr, Math.round(p.x), Math.round(p.y), S);
+  }
+  // 障碍
+  for(var k=0;k<this.obstacles.length;k++){
+    var o = this.obstacles[k];
+    if(o.type === 'bird'){
+      var spr = (Math.floor(this.elapsed*10)%2===0) ? SPRITES.birdA : SPRITES.birdB;
+      drawSprite(ctx, spr, Math.round(o.x), Math.round(o.y), S);
+    } else {
+      drawSprite(ctx, o.spr, Math.round(o.x), Math.round(o.y), S);
+    }
+  }
+  // 恐龙
+  var d = this.dino;
+  var dspr;
+  if(!d.onGround) dspr = SPRITES.dinoJump;
+  else dspr = d.frame===0 ? SPRITES.dinoA : SPRITES.dinoB;
+  drawSprite(ctx, dspr, Math.round(d.x), Math.round(d.y), 2);
+
+  // 粒子
+  for(var m=0;m<this.particles.length;m++){
+    var pt = this.particles[m];
+    ctx.fillStyle = pt.color;
+    ctx.fillRect(Math.round(pt.x)-2, Math.round(pt.y)-2, 4, 4);
+  }
+
+  // 磁铁光环
+  if(this.magnet > 0){
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([6,6]);
+    ctx.beginPath();
+    ctx.arc(d.x + d.w/2, d.y + d.h/2, 70, 0, Math.PI*2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  this.drawHUD();
+
+  // 受伤闪白/黑
+  if(this.flash > 0){
+    ctx.fillStyle = 'rgba(0,0,0,' + (this.flash/0.18 * 0.55) + ')';
+    ctx.fillRect(0,0,W,H);
+  }
+};
+
+Game.prototype.drawBackground = function(){
+  // 远山 (视差 0.25)
+  this.pixelHills(0.25, GROUND_Y, '#e2e2e2', 62, 220, 7);
+  // 近山 (视差 0.45)
+  this.pixelHills(0.45, GROUND_Y, '#cfcfcf', 44, 160, 7);
+
+  // 云 (视差 0.15)
+  for(var i=0;i<this.clouds.length;i++){
+    var c = this.clouds[i];
+    var span = W + 360;
+    var sx = ((c.x - this.distance*0.15) % span + span) % span - 180;
+    ctx.fillStyle = '#f0f0f0';
+    var s = c.s*10;
+    ctx.fillRect(sx, c.y, s*4, s);
+    ctx.fillRect(sx + s, c.y - s*0.6, s*2, s*1.6);
+    ctx.fillRect(sx + s*2, c.y, s*2, s);
+  }
+};
+
+Game.prototype.pixelHills = function(parallax, baseY, color, amp, spacing, step){
+  var offset = (this.distance * parallax) % spacing;
+  ctx.fillStyle = color;
+  var peaks = Math.ceil((W + spacing*2) / spacing);
+  for(var p=-1;p<peaks;p++){
+    var px = p*spacing - offset;
+    var steps = Math.round(amp/step);
+    for(var i=0;i<=steps;i++){
+      var t = i/steps;
+      var w = (spacing/2) * (1 - t);
+      ctx.fillRect(px - w, baseY - i*step, w*2, step);
+    }
+  }
+};
+
+Game.prototype.drawGround = function(){
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, GROUND_Y, W, 4);
+  // 滚动刻度
+  var spacing = 42;
+  var off = this.distance % spacing;
+  for(var x=-off; x<W; x+=spacing){
+    ctx.fillRect(x, GROUND_Y+7, 3, 12);
+  }
+};
+
+Game.prototype.drawHUD = function(){
+  drawPixelText(ctx, 'SCORE', 12, 12, 2, '#000');
+  drawPixelText(ctx, pad5(this.score), 12, 28, 3, '#000');
+
+  drawPixelText(ctx, 'COIN', 12, 60, 2, '#000');
+  drawSprite(ctx, SPRITES.coin, 12, 76, 2);
+  drawPixelText(ctx, 'x'+this.coinCount, 32, 78, 2, '#000');
+
+  var best = Math.max(this.best, this.score);
+  var bt = 'BEST';
+  drawPixelText(ctx, bt, W-12-textWidth(bt,2), 12, 2, '#000');
+  drawPixelText(ctx, pad5(best), W-12-textWidth(pad5(best),3), 28, 3, '#000');
+
+  if(this.magnet > 0){
+    var left = clamp(this.magnet/8, 0, 1);
+    drawPixelText(ctx, 'MAGNET', 12, H-34, 2, '#000');
+    ctx.fillStyle = '#000';
+    ctx.fillRect(12, H-20, 90, 10);
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(14, H-18, Math.round(86*left), 6);
+  }
+};
+
+function pad5(n){
+  var s = String(n);
+  while(s.length < 5) s = '0'+s;
+  return s;
+}
+
+/* =========================================================
+   主循环
+========================================================= */
+var lastTime = performance.now();
+function loop(now){
+  var dt = Math.min(0.033, (now - lastTime)/1000);
+  lastTime = now;
+  if(state === 'playing' && game){
+    game.update(dt);
+    game.render();
+  }
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+
+/* =========================================================
+   屏幕/按钮交互
+========================================================= */
+function startGame(){
+  Sound.init();
+  game = new Game();
+  state = 'playing';
+  showScreen('game');
+}
+
+function showGameOver(g){
+  state = 'over';
+  $('#overScore').textContent = g.score;
+  $('#overCoins').textContent = g.coinCount;
+  $('#overBest').textContent = bestScore();
+  $('#overNew').classList.toggle('show', !!g.isNewBest);
+  showScreen('over');
+  $('#homeBest').textContent = bestScore();
+}
+
+function renderHistory(){
+  var list = loadHistory();
+  var ul = $('#historyList');
+  ul.innerHTML = '';
+  if(list.length === 0){
+    var li = document.createElement('li');
+    li.className = 'hist-empty';
+    li.textContent = '还没有记录，快来跑一局吧！';
+    ul.appendChild(li);
+    return;
+  }
+  var medals = ['1ST','2ND','3RD'];
+  list.forEach(function(h, i){
+    var li = document.createElement('li');
+    li.className = 'hist-item' + (i===0 ? ' best' : '');
+    var rank = i<3 ? medals[i] : '#'+(i+1);
+    li.innerHTML =
+      '<div class="rank">'+rank+'</div>' +
+      '<div class="info"><div class="sc">'+h.score+'</div>' +
+      '<div class="meta">'+fmtDate(h.date)+'</div></div>' +
+      '<div class="coins">金币 '+h.coins+'</div>';
+    if(i===0){
+      var crown = document.createElement('div');
+      crown.className = 'crown';
+      crown.textContent = '★ 最高纪录';
+      li.appendChild(crown);
+    }
+    ul.appendChild(li);
+  });
+}
+
+function renderGuide(){
+  var items = [
+    { key:'coin',    name:'金币', tag:'+10',   desc:'基础得分道具：拾取金币 +10 分，是主要得分来源。' },
+    { key:'star',    name:'星星', tag:'+50',   desc:'额外得分道具：拾取星星 +50 分。' },
+    { key:'diamond', name:'钻石', tag:'+100',  desc:'额外得分道具：拾取钻石 +100 分。' },
+    { key:'crown',   name:'皇冠', tag:'+500',  desc:'稀有道具：拾取皇冠 +500 分，出现概率较低。' },
+    { key:'magnet',  name:'磁铁', tag:'效果',  desc:'拾取后 8 秒内自动吸附附近的金币，方便连续收集。' }
+  ];
+  var ul = $('#guideList');
+  ul.innerHTML = '';
+  items.forEach(function(it){
+    var li = document.createElement('li');
+    li.className = 'guide-item';
+
+    var cv = document.createElement('canvas');
+    cv.width = 64; cv.height = 64;
+    cv.className = 'guide-sprite';
+    var cctx = cv.getContext('2d');
+    drawSprite(cctx, SPRITES[it.key], 4, 4, 7);
+
+    var info = document.createElement('div');
+    info.className = 'guide-info';
+    info.innerHTML =
+      '<div class="guide-name">'+it.name+'<span class="guide-tag">'+it.tag+'</span></div>' +
+      '<div class="guide-desc">'+it.desc+'</div>';
+
+    li.appendChild(cv);
+    li.appendChild(info);
+    ul.appendChild(li);
+  });
+}
+
+$('#startBtn').addEventListener('click', startGame);
+$('#historyBtn').addEventListener('click', function(){
+  Sound.init();
+  renderHistory();
+  showScreen('history');
+});
+$('#guideBtn').addEventListener('click', function(){
+  Sound.init();
+  renderGuide();
+  showScreen('guide');
+});
+$('#guideBackBtn').addEventListener('click', function(){ showScreen('home'); });
+$('#backBtn').addEventListener('click', function(){ showScreen('home'); });
+$('#restartBtn').addEventListener('click', startGame);
+$('#homeBtn').addEventListener('click', function(){ showScreen('home'); });
+
+/* ---------- 键盘输入 ---------- */
+window.addEventListener('keydown', function(e){
+  if(e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW'){
+    e.preventDefault();
+    if(e.repeat) return;   // 忽略长按自动重复，防止误触二连跳
+    if(state === 'home' || state === 'over'){ startGame(); return; }
+    if(state === 'playing' && game) game.pressJump();
+  }
+  if(e.code === 'ArrowDown' || e.code === 'KeyS'){
+    e.preventDefault();
+    if(game) game.fastFall = true;
+  }
+});
+window.addEventListener('keyup', function(e){
+  if(e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW'){ if(game) game.releaseJump(); }
+  if(e.code === 'ArrowDown' || e.code === 'KeyS'){ if(game) game.fastFall = false; }
+});
+window.addEventListener('blur', function(){ if(game){ game.holdingJump = false; game.fastFall = false; } });
+
+/* ---------- 触摸/点击跳跃 ---------- */
+var gameScreen = $('#screen-game');
+gameScreen.addEventListener('pointerdown', function(e){
+  e.preventDefault();
+  if(state === 'playing' && game) game.pressJump();
+});
+gameScreen.addEventListener('pointerup', function(){ if(game) game.releaseJump(); });
+gameScreen.addEventListener('contextmenu', function(e){ e.preventDefault(); });
+
+/* ---------- 初始化首页最高分 ---------- */
+$('#homeBest').textContent = bestScore();
+
+})();
+</script>
+</body>
+</html>
